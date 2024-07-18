@@ -1,17 +1,17 @@
 {
 	"schemaVersion": 1,
 	"id": "apiblock",
-	"version": "${version}",
+	"version": "0.1-pre",
 	"name": "APIBlock",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Make HTTP requests from minecraft!",
 	"authors": [
-		"Me!"
+		"@SunkenPotato"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/SunkenPotato/apiblock",
+		"sources": "https://github.com/SunkenPotato/apiblock"
 	},
-	"license": "CC0-1.0",
+	"license": "GPL-3.0-or-later",
 	"icon": "assets/apiblock/icon.png",
 	"environment": "*",
 	"entrypoints": {
