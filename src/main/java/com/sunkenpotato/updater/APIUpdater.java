@@ -8,6 +8,7 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 
 import java.util.ArrayList;
@@ -84,5 +85,12 @@ public class APIUpdater {
         for (Header header : headers) {
             GET_REQUEST.addHeader(header);
         }
+    }
+
+    public void addHeader(String name, String value) {
+        Header header = new BasicHeader(name, value);
+        this.headers.add(header);
+        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+        GET_REQUEST.addHeader(header);
     }
 }

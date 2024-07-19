@@ -21,9 +21,9 @@ import java.util.List;
 
 public class APIBlockEntity extends BlockEntity {
 
-    private String httpLoc = "";
+    public String httpLoc = "";
     private List<Header> headers = new ArrayList<>();
-    private int tickSpace = 20;
+    public int tickSpace = 20;
     private int tickCounter = 0;
     public final APIUpdater apiUpdater = new APIUpdater(httpLoc);
 

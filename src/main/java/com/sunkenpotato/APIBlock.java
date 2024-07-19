@@ -1,6 +1,8 @@
 package com.sunkenpotato;
 
+import com.mojang.brigadier.CommandDispatcher;
 import com.sunkenpotato.block.BlockRegistry;
+import com.sunkenpotato.command.CommandRegistry;
 import net.fabricmc.api.ModInitializer;
 
 import net.minecraft.block.RedstoneBlock;
@@ -15,6 +17,7 @@ public class APIBlock implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("apiblock");
 	public static final String MOD_ID = "apiblock";
 	public static final BlockRegistry blockRegistry = new BlockRegistry();
+	public static final CommandRegistry commandRegistry = new CommandRegistry();
 
 	@Override
 	public void onInitialize() {
@@ -25,5 +28,6 @@ public class APIBlock implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 		blockRegistry.initialize();
+		commandRegistry.initialize();
 	}
 }
