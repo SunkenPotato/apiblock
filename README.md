@@ -22,5 +22,5 @@ Retrieve your file from `build/libs/apiblock-*.jar`
 - [x] Headers
 - [ ] HTTP POST 
 - [ ] HTTP Content
-- [ ] User accessible UI
+- [x] ~~User accessible UI~~ Command interface
 - [ ] Texture and model 😅
