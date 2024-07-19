@@ -3,7 +3,7 @@
 API Block is a technical block, allowing users to make HTTP Requests from Minecraft, and then get if the Request succeeded using redstone.
 
 ## Getting the mod
-Modrinth: #---not available yet---# \
+Modrinth: https://modrinth.com/mod/apiblock \
 Releases page: https://github.com/SunkenPotato/apiblock/releases
 
 ### Building from source
