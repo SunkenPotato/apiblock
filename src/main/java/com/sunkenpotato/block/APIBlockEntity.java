@@ -22,8 +22,9 @@ import java.util.List;
 public class APIBlockEntity extends BlockEntity {
 
     private String httpLoc = "";
-    private List<Header> headers = new ArrayList<Header>();
-    private int tick = 0;
+    private List<Header> headers = new ArrayList<>();
+    private int tickSpace = 20;
+    private int tickCounter = 0;
     public final APIUpdater apiUpdater = new APIUpdater(httpLoc);
 
     public APIBlockEntity(BlockPos pos, BlockState state) {
@@ -33,11 +34,12 @@ public class APIBlockEntity extends BlockEntity {
 
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
-
+        // set HTTP location
         nbt.putString("httpLoc", httpLoc);
 
         apiUpdater.setURL(httpLoc);
 
+        // Set request headers
         NbtCompound locHeaders = new NbtCompound();
         for (Header entry : headers) {
             locHeaders.putString(entry.getName(), entry.getValue());
@@ -46,6 +48,10 @@ public class APIBlockEntity extends BlockEntity {
         nbt.put("headers", locHeaders);
 
         apiUpdater.setHeaders(headers);
+        // set tick space
+
+        nbt.putInt("tickSpace", tickSpace);
+        apiUpdater.setTickSpace(tickSpace);
 
         super.writeNbt(nbt, wrapper);
     }
@@ -54,14 +60,19 @@ public class APIBlockEntity extends BlockEntity {
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
 
+        // read http location
         httpLoc = nbt.getString("httpLoc");
 
+        // read headers
         NbtCompound nbtHeaders = nbt.getCompound("headers");
         headers.clear();
 
         for (String i : nbtHeaders.getKeys()) {
             headers.add(new BasicHeader(i, nbtHeaders.getString(i)));
         }
+
+        // read tick space
+        tickSpace = nbt.getInt("tickSpace");
     }
 
     @Nullable
@@ -77,8 +88,8 @@ public class APIBlockEntity extends BlockEntity {
 
 
     public static void tick(World world, BlockPos pos, BlockState state, APIBlockEntity blockEntity) {
-        blockEntity.tick++;
-        if (blockEntity.tick == 20) {
+        blockEntity.tickCounter++;
+        if (blockEntity.tickCounter == blockEntity.apiUpdater.tickSpace) {
 
             blockEntity.apiUpdater.executeRequest();
 
@@ -89,7 +100,7 @@ public class APIBlockEntity extends BlockEntity {
                 world.setBlockState(pos, state.with(Properties.POWERED, shouldEmit), 3);
                 world.updateNeighborsAlways(pos, state.getBlock());
             }
-            blockEntity.tick = 0;
+            blockEntity.tickCounter = 0;
         }
     }
 }

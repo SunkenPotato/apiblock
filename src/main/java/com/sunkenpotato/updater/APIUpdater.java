@@ -8,7 +8,6 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ public class APIUpdater {
     public String httpLocation;
     public List<Header> headers = new ArrayList<Header>();
     private SimpleHttpRequest GET_REQUEST;
+    public int tickSpace = 20;
     private static final CloseableHttpAsyncClient client;
     public volatile boolean success = false;
 
@@ -70,6 +70,10 @@ public class APIUpdater {
     public void setURL(String url) {
         httpLocation = url;
         GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+    }
+
+    public void setTickSpace(int tickSpace) {
+        this.tickSpace = tickSpace;
     }
 
     public void setHeaders(List<Header> headers) {
