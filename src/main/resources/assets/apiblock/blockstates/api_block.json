@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=true": {
+      "model": "apiblock:block/apiblock_powered"
+    },
+    "powered=false": {
+      "model": "apiblock:block/apiblock_unpowered"
+    }
+  }
+}

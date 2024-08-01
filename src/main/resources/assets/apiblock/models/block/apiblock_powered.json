@@ -1,8 +1,7 @@
 {
 	"credit": "Made with Blockbench",
 	"textures": {
-		"0": "api_block",
-		"particle": "api_block"
+		"0": "apiblock:block/apiblock_powered"
 	},
 	"elements": [
 		{
@@ -60,8 +59,8 @@
 	"gui_light": "front",
 	"display": {
 		"thirdperson_righthand": {
-			"translation": [0, 1, -1.25],
-			"scale": [0.375, 0.375, 0.375]
+			"translation": [0, 0, -0.75],
+			"scale": [0.25, 0.25, 0.25]
 		},
 		"ground": {
 			"scale": [0.3, 0.3, 0.3]

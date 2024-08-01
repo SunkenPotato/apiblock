@@ -10,6 +10,8 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +23,11 @@ public class APIBlock extends BlockWithEntity implements BlockEntityProvider {
     public APIBlock(AbstractBlock.Settings settings) {
         super(settings);
         setDefaultState(this.stateManager.getDefaultState().with(POWERED, false));
+    }
+
+    @Override
+    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return VoxelShapes.union(createCuboidShape(0, 0, 0, 16, 4, 16), createCuboidShape(0, 4, 0, 1, 15, 1));
     }
 
     @Override
