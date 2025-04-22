@@ -64,7 +64,7 @@ public class APIUpdater {
         @Override
         public void cancelled() {
             updater.success = false;
-            APIBlock.LOGGER.warn("Warning. Request to {} cancelled", updater.httpLocation);
+            APIBlock.LOGGER.warn("Request to {} was cancelled", updater.httpLocation);
         }
     }
 
