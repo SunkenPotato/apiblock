@@ -23,4 +23,3 @@ Retrieve your file from `build/libs/apiblock-*.jar`
 - [ ] HTTP POST 
 - [ ] HTTP Content
 - [x] ~~User accessible UI~~ Command
-- [x] Texture and model 😅
