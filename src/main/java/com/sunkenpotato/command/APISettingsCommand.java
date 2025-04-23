@@ -32,7 +32,6 @@ public class APISettingsCommand {
     }
 
     private static APIBlockState getAPIBlockState(CommandContext<ServerCommandSource> ctx) {
-
         BlockPos pos;
         try {
             pos = BlockPosArgumentType.getLoadedBlockPos(ctx, "pos");
@@ -47,59 +46,35 @@ public class APISettingsCommand {
         }
 
         return APIBlockState.NOT_AN_API_BLOCK;
-
     }
 
     public static int getBlockInfo(CommandContext<ServerCommandSource> ctx) {
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found"), false);
-                return 1;
-            }
-        }
-
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
-
+        BlockPos pos = entity.getPos();
         StringBuilder sb = new StringBuilder();
         sb.append("APIBlock at ").append(pos.getX()).append(", ").append(pos.getY()).append(", ").append(pos.getZ()).append(" has the following properties:\n");
-        sb.append("HTTP Route: ").append(blockEntity.apiUpdater.httpLocation).append("\n");
+        sb.append("HTTP Route: ").append(entity.apiUpdater.httpLocation).append("\n");
         sb.append("Headers: \n");
-        for (var i : blockEntity.apiUpdater.headers) {
+        for (var i : entity.apiUpdater.headers) {
             sb.append('\t').append(i.getName()).append(" : ").append(i.getValue()).append("\n");
         }
 
-        sb.append("Update time: ").append(blockEntity.apiUpdater.tickSpace).append(" ticks.");
+        sb.append("Update time: ").append(entity.tickSpace).append(" ticks.");
+        sb.append("HTTP Method: ").append(entity.apiUpdater.getMethod());
 
         ctx.getSource().sendFeedback(() -> Text.literal(sb.toString()), false);
         return 0;
     }
 
     public static int setHTTPLocationSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
-
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
         String input = StringArgumentType.getString(ctx, "input");
 
-        blockEntity.apiUpdater.setURL(input);
-        blockEntity.httpLoc = input;
+        entity.apiUpdater.setURL(input);
+        entity.httpLoc = input;
 
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock HTTP location to: " + input), false);
 
@@ -107,90 +82,55 @@ public class APISettingsCommand {
     }
 
     public static int setTickSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
         int input = IntegerArgumentType.getInteger(ctx, "input");
 
-        blockEntity.apiUpdater.setTickSpace(input);
-        blockEntity.tickSpace = input;
+        entity.tickSpace = input;
 
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock tick space to: " + input), false);
 
         return 0;
+    }
 
+    public static int setMethodSubcommand(CommandContext<ServerCommandSource> ctx) {
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null)
+            return 1;
+
+
+        MethodArgumentType.Method method = MethodArgumentType.getMethod(ctx, "input");
+        entity.apiUpdater.setMethod(method);
+        ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock method to: " + method.toString()), false);
+
+        return 0;
     }
 
     public static int getHTTPLocationSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
-
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + blockEntity.httpLoc), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + entity.httpLoc), false);
         return 0;
     }
 
     public static int getTickSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following tickSpace: " + blockEntity.tickSpace), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following tickSpace: " + entity.tickSpace), false);
         return 0;
     }
 
     public static int getHeaderSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
-
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
         StringBuilder sb = new StringBuilder();
         sb.append("APIBlock has the following headers: \n");
 
-        List<Header> headers = blockEntity.apiUpdater.headers;
+        List<Header> headers = entity.apiUpdater.headers;
 
         for (var i : headers) {
             sb.append(i.getName()).append(" : ").append(i.getValue()).append("\n");
@@ -201,50 +141,35 @@ public class APISettingsCommand {
         return 0;
     }
 
+    public static int getMethodSubcommand(CommandContext<ServerCommandSource> ctx) {
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
+
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the HTTP Method " + entity.apiUpdater.getMethod().toString() + "."), false);
+
+        return 0;
+    }
+
     public static int addTickSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
         int value = IntegerArgumentType.getInteger(ctx, "value");
+        entity.tickSpace += value;
 
-        blockEntity.apiUpdater.setTickSpace(blockEntity.tickSpace + value);
-        blockEntity.tickSpace += value;
-
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock tickSpeed is now at " + blockEntity.tickSpace), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock tickSpeed is now at " + entity.tickSpace), false);
 
         return 0;
     }
 
     public static int addHeaderSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
         String name = StringArgumentType.getString(ctx, "name");
         String value = StringArgumentType.getString(ctx, "value");
 
-        blockEntity.apiUpdater.addHeader(name, value);
+        entity.apiUpdater.addHeader(name, value);
 
         ctx.getSource().sendFeedback(() -> Text.literal("Added the following header: \n" + name + " : " + value), false);
 
@@ -252,23 +177,11 @@ public class APISettingsCommand {
     }
 
     public static int resetRouteSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
-
-        blockEntity.apiUpdater.setURL("");
-        blockEntity.httpLoc = "";
+        entity.apiUpdater.setURL("");
+        entity.httpLoc = "";
 
         ctx.getSource().sendFeedback(() -> Text.literal("Reset route."), false);
 
@@ -276,23 +189,10 @@ public class APISettingsCommand {
     }
 
     public static int resetTickSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
-
-        blockEntity.apiUpdater.setTickSpace(20);
-        blockEntity.tickSpace = 20;
+        entity.tickSpace = 20;
 
         ctx.getSource().sendFeedback(() -> Text.literal("Reset tick speed."), false);
 
@@ -300,28 +200,42 @@ public class APISettingsCommand {
     }
 
     public static int resetHeaderSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockState blockState = getAPIBlockState(ctx);
-        switch (blockState) {
-            case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
-                return 1;
-            }
-            case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
-                return 1;
-            }
-        }
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
-        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
-
-        blockEntity.apiUpdater.setHeaders(new ArrayList<>());
-
+        entity.apiUpdater.setHeaders(new ArrayList<>());
         ctx.getSource().sendFeedback(() -> Text.literal("Reset headers."), false);
 
         return 0;
     }
 
+    public static int resetMethodSubcommand(CommandContext<ServerCommandSource> ctx) {
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null) return 1;
 
+        entity.apiUpdater.setMethod(MethodArgumentType.Method.GET);
+        ctx.getSource().sendFeedback(() -> Text.literal("Reset method to GET."), false);
+
+        return 0;
+    }
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    private static APIBlockEntity getApiBlock(CommandContext<ServerCommandSource> ctx) {
+        APIBlockState blockState = getAPIBlockState(ctx);
+        switch (blockState) {
+            case NOT_LOADED -> {
+                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
+                return null;
+            }
+            case NOT_AN_API_BLOCK -> {
+                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
+                return null;
+            }
+        }
+
+        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
+
+        return ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+    }
 }
 

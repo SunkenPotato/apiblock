@@ -20,16 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class APIBlockEntity extends BlockEntity {
-
     public String httpLoc = "";
-    private List<Header> headers = new ArrayList<>();
+    private final List<Header> headers = new ArrayList<>();
     public int tickSpace = 20;
     private int tickCounter = 0;
     public final APIUpdater apiUpdater = new APIUpdater(httpLoc);
 
     public APIBlockEntity(BlockPos pos, BlockState state) {
         super(BlockRegistry.API_BLOCK_ENTITY, pos, state);
-        apiUpdater.executeRequest();
     }
 
     @Override
@@ -49,9 +47,7 @@ public class APIBlockEntity extends BlockEntity {
 
         apiUpdater.setHeaders(headers);
         // set tick space
-
         nbt.putInt("tickSpace", tickSpace);
-        apiUpdater.setTickSpace(tickSpace);
 
         super.writeNbt(nbt, wrapper);
     }
@@ -86,15 +82,13 @@ public class APIBlockEntity extends BlockEntity {
         return createNbt(wrapperLookup);
     }
 
-
     public static void tick(World world, BlockPos pos, BlockState state, APIBlockEntity blockEntity) {
         blockEntity.tickCounter++;
-        if (blockEntity.tickCounter == blockEntity.apiUpdater.tickSpace) {
-
+        if (blockEntity.tickCounter == blockEntity.tickSpace) {
             blockEntity.apiUpdater.executeRequest();
 
             boolean currentState = state.get(Properties.POWERED);
-            boolean shouldEmit = blockEntity.apiUpdater.success;
+            boolean shouldEmit = blockEntity.apiUpdater.isSuccess();
 
             if (currentState != shouldEmit) {
                 world.setBlockState(pos, state.with(Properties.POWERED, shouldEmit), 3);

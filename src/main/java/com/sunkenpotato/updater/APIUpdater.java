@@ -1,6 +1,7 @@
 package com.sunkenpotato.updater;
 
 import com.sunkenpotato.APIBlock;
+import com.sunkenpotato.command.MethodArgumentType;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
@@ -15,50 +16,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class APIUpdater {
-
     public String httpLocation;
-    public List<Header> headers = new ArrayList<Header>();
-    private SimpleHttpRequest GET_REQUEST;
-    public int tickSpace = 20;
-    private static final CloseableHttpAsyncClient client;
-    public volatile boolean success = false;
+    public List<Header> headers = new ArrayList<>();
+    private SimpleHttpRequest REQUEST;
+    private static final CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+            .setIOReactorConfig(
+                    IOReactorConfig.custom()
+                            .setIoThreadCount(Runtime.getRuntime().availableProcessors())
+                            .build()
+            )
+            .build();
+    private MethodArgumentType.Method method = MethodArgumentType.Method.GET;
+    private volatile boolean success = false;
 
     static {
-        client = HttpAsyncClients.custom()
-                .setIOReactorConfig(
-                        IOReactorConfig.custom()
-                                .setIoThreadCount(Runtime.getRuntime().availableProcessors())
-                                .build()
-                )
-                .build();
         client.start();
     }
 
     public APIUpdater(String httpString) {
         httpLocation = httpString;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+        REQUEST = SimpleRequestBuilder.get(httpLocation).build();
     }
 
     public void executeRequest() {
-        client.execute(GET_REQUEST, new APIResponseHandler(this));
+        if (this.httpLocation != null)
+            client.execute(REQUEST, new APIResponseHandler(this));
     }
 
-    private static class APIResponseHandler implements FutureCallback<SimpleHttpResponse> {
-
-        APIUpdater updater;
-
-        public APIResponseHandler(APIUpdater updater) {
-            this.updater = updater;
-        }
-
+    private record APIResponseHandler(APIUpdater updater) implements FutureCallback<SimpleHttpResponse> {
         @Override
         public void completed(SimpleHttpResponse result) {
-            if (result.getCode() == 200) updater.success = true;
+            updater.success = result.getCode() == 200;
         }
 
         @Override
         public void failed(Exception ex) {
             updater.success = false;
+            APIBlock.LOGGER.error("Request to {} failed", ex.getMessage(), ex);
         }
 
         @Override
@@ -70,27 +64,35 @@ public class APIUpdater {
 
     public void setURL(String url) {
         httpLocation = url;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-    }
-
-    public void setTickSpace(int tickSpace) {
-        this.tickSpace = tickSpace;
+        REQUEST = SimpleRequestBuilder.get(httpLocation).build();
     }
 
     public void setHeaders(List<Header> headers) {
         this.headers = headers;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-        GET_REQUEST.setHeaders();
+        REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+        REQUEST.setHeaders();
 
         for (Header header : headers) {
-            GET_REQUEST.addHeader(header);
+            REQUEST.addHeader(header);
         }
+    }
+
+    public void setMethod(MethodArgumentType.Method method) {
+        this.method = method;
+    }
+
+    public MethodArgumentType.Method getMethod() {
+        return method;
     }
 
     public void addHeader(String name, String value) {
         Header header = new BasicHeader(name, value);
         this.headers.add(header);
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-        GET_REQUEST.addHeader(header);
+        REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+        REQUEST.addHeader(header);
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 }
