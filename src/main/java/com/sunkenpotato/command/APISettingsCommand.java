@@ -1,5 +1,6 @@
 package com.sunkenpotato.command;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -10,25 +11,18 @@ import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.Method;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 public class APISettingsCommand {
 
     public static int noArgumentBase(CommandContext<ServerCommandSource> ctx) {
         ctx.getSource()
-                .sendFeedback(() -> Text.literal("Please supply coordinates"), false);
+                .sendError(Text.literal("Please supply coordinates"));
 
         return 1;
-    }
-
-    private enum APIBlockState {
-        NOT_LOADED,
-        NOT_AN_API_BLOCK,
-        OK
     }
 
     private static APIBlockState getAPIBlockState(CommandContext<ServerCommandSource> ctx) {
@@ -57,11 +51,11 @@ public class APISettingsCommand {
         sb.append("APIBlock at ").append(pos.getX()).append(", ").append(pos.getY()).append(", ").append(pos.getZ()).append(" has the following properties:\n");
         sb.append("HTTP Route: ").append(entity.apiUpdater.httpLocation).append("\n");
         sb.append("Headers: \n");
-        for (var i : entity.apiUpdater.headers) {
-            sb.append('\t').append(i.getName()).append(" : ").append(i.getValue()).append("\n");
+        for (var i : entity.apiUpdater.getHeaders()) {
+            sb.append('\t').append(i.getName()).append(": ").append(i.getValue()).append("\n");
         }
 
-        sb.append("Update time: ").append(entity.tickSpace).append(" ticks.");
+        sb.append("Update time: ").append(entity.tickSpace).append(" ticks.\n");
         sb.append("HTTP Method: ").append(entity.apiUpdater.getMethod());
 
         ctx.getSource().sendFeedback(() -> Text.literal(sb.toString()), false);
@@ -73,9 +67,12 @@ public class APISettingsCommand {
         if (entity == null) return 1;
         String input = StringArgumentType.getString(ctx, "input");
 
-        entity.apiUpdater.setURL(input);
-        entity.httpLoc = input;
-
+        try {
+            entity.apiUpdater.setURI(input);
+        } catch (IllegalArgumentException e) {
+            ctx.getSource().sendError(Text.literal("Invalid URI."));
+            return 1;
+        }
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock HTTP location to: " + input), false);
 
         return 0;
@@ -99,10 +96,20 @@ public class APISettingsCommand {
         if (entity == null)
             return 1;
 
-
-        MethodArgumentType.Method method = MethodArgumentType.getMethod(ctx, "input");
+        Method method = MethodArgumentType.getMethod(ctx, "input");
         entity.apiUpdater.setMethod(method);
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock method to: " + method.toString()), false);
+
+        return 0;
+    }
+
+    public static int setEnabledSubcommand(CommandContext<ServerCommandSource> ctx) {
+        APIBlockEntity entity = getApiBlock(ctx);
+        if (entity == null)
+            return 1;
+
+        entity.enabled = BoolArgumentType.getBool(ctx, "input");
+        ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock enabled to: " + entity.enabled), false);
 
         return 0;
     }
@@ -111,7 +118,7 @@ public class APISettingsCommand {
         APIBlockEntity entity = getApiBlock(ctx);
         if (entity == null) return 1;
 
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + entity.httpLoc), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + entity.apiUpdater.httpLocation), false);
         return 0;
     }
 
@@ -130,10 +137,10 @@ public class APISettingsCommand {
         StringBuilder sb = new StringBuilder();
         sb.append("APIBlock has the following headers: \n");
 
-        List<Header> headers = entity.apiUpdater.headers;
+        var headers = entity.apiUpdater.getHeaders();
 
         for (var i : headers) {
-            sb.append(i.getName()).append(" : ").append(i.getValue()).append("\n");
+            sb.append(i.getName()).append(": ").append(i.getValue()).append("\n");
         }
 
         ctx.getSource().sendFeedback(() -> Text.literal(sb.toString()), false);
@@ -176,18 +183,6 @@ public class APISettingsCommand {
         return 0;
     }
 
-    public static int resetRouteSubcommand(CommandContext<ServerCommandSource> ctx) {
-        APIBlockEntity entity = getApiBlock(ctx);
-        if (entity == null) return 1;
-
-        entity.apiUpdater.setURL("");
-        entity.httpLoc = "";
-
-        ctx.getSource().sendFeedback(() -> Text.literal("Reset route."), false);
-
-        return 0;
-    }
-
     public static int resetTickSubcommand(CommandContext<ServerCommandSource> ctx) {
         APIBlockEntity entity = getApiBlock(ctx);
         if (entity == null) return 1;
@@ -213,7 +208,7 @@ public class APISettingsCommand {
         APIBlockEntity entity = getApiBlock(ctx);
         if (entity == null) return 1;
 
-        entity.apiUpdater.setMethod(MethodArgumentType.Method.GET);
+        entity.apiUpdater.setMethod(Method.GET);
         ctx.getSource().sendFeedback(() -> Text.literal("Reset method to GET."), false);
 
         return 0;
@@ -224,11 +219,11 @@ public class APISettingsCommand {
         APIBlockState blockState = getAPIBlockState(ctx);
         switch (blockState) {
             case NOT_LOADED -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
+                ctx.getSource().sendError(Text.literal("Position does not exist / not loaded."));
                 return null;
             }
             case NOT_AN_API_BLOCK -> {
-                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
+                ctx.getSource().sendError(Text.literal("No block entity found."));
                 return null;
             }
         }
@@ -236,6 +231,12 @@ public class APISettingsCommand {
         BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
 
         return ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+    }
+
+    private enum APIBlockState {
+        NOT_LOADED,
+        NOT_AN_API_BLOCK,
+        OK
     }
 }
 
