@@ -1,64 +1,96 @@
 package com.sunkenpotato.updater;
 
 import com.sunkenpotato.APIBlock;
-import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 
-import java.util.ArrayList;
+import java.net.*;
 import java.util.List;
 
 public class APIUpdater {
-
-    public String httpLocation;
-    public List<Header> headers = new ArrayList<Header>();
-    private SimpleHttpRequest GET_REQUEST;
-    public int tickSpace = 20;
-    private static final CloseableHttpAsyncClient client;
-    public volatile boolean success = false;
+    private static final CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+            .setIOReactorConfig(
+                    IOReactorConfig.custom()
+                            .setIoThreadCount(Runtime.getRuntime().availableProcessors())
+                            .build()
+            )
+            .build();
 
     static {
-        client = HttpAsyncClients.custom()
-                .setIOReactorConfig(
-                        IOReactorConfig.custom()
-                                .setIoThreadCount(Runtime.getRuntime().availableProcessors())
-                                .build()
-                )
-                .build();
         client.start();
     }
 
-    public APIUpdater(String httpString) {
-        httpLocation = httpString;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
+    public URI httpLocation;
+    private SimpleRequestBuilder REQUEST_BUILDER;
+    private Method method = Method.GET;
+    private volatile boolean success = true;
+
+    public APIUpdater(String httpString) throws IllegalArgumentException {
+        httpLocation = URI.create(httpString);
+        REQUEST_BUILDER = SimpleRequestBuilder.create(method).setUri(httpLocation);
     }
 
     public void executeRequest() {
-        client.execute(GET_REQUEST, new APIResponseHandler(this));
+        client.execute(REQUEST_BUILDER.build(), new APIResponseHandler(this));
     }
 
-    private static class APIResponseHandler implements FutureCallback<SimpleHttpResponse> {
+    public void setURI(String uri) throws IllegalArgumentException, MalformedURLException {
+        var parsedUri = URI.create(uri);
 
-        APIUpdater updater;
+        //noinspection ResultOfMethodCallIgnored
+        parsedUri.toURL();
 
-        public APIResponseHandler(APIUpdater updater) {
-            this.updater = updater;
-        }
+        httpLocation = parsedUri;
+        REQUEST_BUILDER.setUri(httpLocation);
+    }
 
+    public void setHeaders(List<Header> headers) {
+        REQUEST_BUILDER.setHeaders(headers.iterator());
+    }
+
+    public List<Header> getHeaders() {
+        Header[] headers = REQUEST_BUILDER.getHeaders();
+        if (headers == null) headers = new Header[]{};
+
+        return List.of(headers);
+    }
+
+    public Method getMethod() {
+        return method;
+    }
+
+    public void setMethod(Method method) {
+        this.method = method;
+        REQUEST_BUILDER = SimpleRequestBuilder.create(method).setHeaders(REQUEST_BUILDER.getHeaders()).setUri(httpLocation);
+    }
+
+    public void addHeader(String name, String value) {
+        Header header = new BasicHeader(name, value);
+        REQUEST_BUILDER.addHeader(header);
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    private record APIResponseHandler(APIUpdater updater) implements FutureCallback<SimpleHttpResponse> {
         @Override
         public void completed(SimpleHttpResponse result) {
-            if (result.getCode() == 200) updater.success = true;
+            System.out.println(result.getCode());
+            updater.success = result.getCode() == 200;
         }
 
         @Override
         public void failed(Exception ex) {
             updater.success = false;
+            APIBlock.LOGGER.error("Request to {} failed", ex.getMessage(), ex);
         }
 
         @Override
@@ -66,31 +98,5 @@ public class APIUpdater {
             updater.success = false;
             APIBlock.LOGGER.warn("Request to {} was cancelled", updater.httpLocation);
         }
-    }
-
-    public void setURL(String url) {
-        httpLocation = url;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-    }
-
-    public void setTickSpace(int tickSpace) {
-        this.tickSpace = tickSpace;
-    }
-
-    public void setHeaders(List<Header> headers) {
-        this.headers = headers;
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-        GET_REQUEST.setHeaders();
-
-        for (Header header : headers) {
-            GET_REQUEST.addHeader(header);
-        }
-    }
-
-    public void addHeader(String name, String value) {
-        Header header = new BasicHeader(name, value);
-        this.headers.add(header);
-        GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
-        GET_REQUEST.addHeader(header);
     }
 }

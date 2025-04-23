@@ -1,6 +1,6 @@
 {
-	"parent": "apiblock:block/apiblock_powered",
-	"textures": {
-		"layer0": "apiblock:item/api_block"
-	}
+  "parent": "apiblock:block/apiblock_powered",
+  "textures": {
+    "layer0": "apiblock:item/api_block"
+  }
 }
