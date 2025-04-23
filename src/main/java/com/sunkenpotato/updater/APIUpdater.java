@@ -11,7 +11,7 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 
-import java.net.URI;
+import java.net.*;
 import java.util.List;
 
 public class APIUpdater {
@@ -41,8 +41,13 @@ public class APIUpdater {
         client.execute(REQUEST_BUILDER.build(), new APIResponseHandler(this));
     }
 
-    public void setURI(String uri) throws IllegalArgumentException {
-        httpLocation = URI.create(uri);
+    public void setURI(String uri) throws IllegalArgumentException, MalformedURLException {
+        var parsedUri = URI.create(uri);
+
+        //noinspection ResultOfMethodCallIgnored
+        parsedUri.toURL();
+
+        httpLocation = parsedUri;
         REQUEST_BUILDER.setUri(httpLocation);
     }
 

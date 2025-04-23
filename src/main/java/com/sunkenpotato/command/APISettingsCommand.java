@@ -13,6 +13,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import org.apache.hc.core5.http.Method;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -69,7 +70,7 @@ public class APISettingsCommand {
 
         try {
             entity.apiUpdater.setURI(input);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | MalformedURLException e) {
             ctx.getSource().sendError(Text.literal("Invalid URI."));
             return 1;
         }

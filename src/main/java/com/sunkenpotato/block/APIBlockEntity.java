@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import org.apache.hc.core5.http.Header;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 
 import static com.sunkenpotato.APIBlock.LOGGER;
@@ -83,7 +84,11 @@ public class APIBlockEntity extends BlockEntity {
         super.readNbt(nbt, wrapper);
 
         // read http location
-        apiUpdater.setURI(nbt.getString("httpLoc"));
+        try {
+            apiUpdater.setURI(nbt.getString("httpLoc"));
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
 
         // read headers
         NbtCompound nbtHeaders = nbt.getCompound("headers");
