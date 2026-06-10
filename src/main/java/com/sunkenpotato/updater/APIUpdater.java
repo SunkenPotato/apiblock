@@ -16,12 +16,12 @@ import java.util.List;
 
 public class APIUpdater {
 
-    public String httpLocation;
-    public List<Header> headers = new ArrayList<Header>();
+    private String httpLocation;
+    private List<Header> headers = new ArrayList<>();
     private SimpleHttpRequest GET_REQUEST;
-    public int tickSpace = 20;
+    private int tickSpace = 20;
     private static final CloseableHttpAsyncClient client;
-    public volatile boolean success = false;
+    private volatile boolean success = false;
 
     static {
         client = HttpAsyncClients.custom()
@@ -68,13 +68,25 @@ public class APIUpdater {
         }
     }
 
-    public void setURL(String url) {
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setHttpLocation(String url) {
         httpLocation = url;
         GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
     }
 
+    public String getHttpLocation() {
+        return httpLocation;
+    }
+
     public void setTickSpace(int tickSpace) {
         this.tickSpace = tickSpace;
+    }
+
+    public int getTickSpace() {
+        return tickSpace;
     }
 
     public void setHeaders(List<Header> headers) {
@@ -92,5 +104,14 @@ public class APIUpdater {
         this.headers.add(header);
         GET_REQUEST = SimpleRequestBuilder.get(httpLocation).build();
         GET_REQUEST.addHeader(header);
+    }
+
+    public boolean deleteHeader(String name) {
+        this.headers.removeIf(x -> x.getName().equals(name));
+        return GET_REQUEST.removeHeaders(name);
+    }
+
+    public List<Header> getHeaders() {
+        return headers;
     }
 }

@@ -11,21 +11,13 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.jetbrains.annotations.Nullable;
 import org.apache.hc.core5.http.Header;
 
-
-import java.util.ArrayList;
-import java.util.List;
-
 public class APIBlockEntity extends BlockEntity {
 
-    public String httpLoc = "";
-    private List<Header> headers = new ArrayList<>();
-    public int tickSpace = 20;
     private int tickCounter = 0;
-    public final APIUpdater apiUpdater = new APIUpdater(httpLoc);
+    public final APIUpdater apiUpdater = new APIUpdater("");
 
     public APIBlockEntity(BlockPos pos, BlockState state) {
         super(BlockRegistry.API_BLOCK_ENTITY, pos, state);
@@ -35,23 +27,18 @@ public class APIBlockEntity extends BlockEntity {
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         // set HTTP location
-        nbt.putString("httpLoc", httpLoc);
-
-        apiUpdater.setURL(httpLoc);
+        nbt.putString("httpLoc", apiUpdater.getHttpLocation());
 
         // Set request headers
         NbtCompound locHeaders = new NbtCompound();
-        for (Header entry : headers) {
+        for (Header entry : apiUpdater.getHeaders()) {
             locHeaders.putString(entry.getName(), entry.getValue());
         }
 
         nbt.put("headers", locHeaders);
 
-        apiUpdater.setHeaders(headers);
         // set tick space
-
-        nbt.putInt("tickSpace", tickSpace);
-        apiUpdater.setTickSpace(tickSpace);
+        nbt.putInt("tickSpace", apiUpdater.getTickSpace());
 
         super.writeNbt(nbt, wrapper);
     }
@@ -61,18 +48,17 @@ public class APIBlockEntity extends BlockEntity {
         super.readNbt(nbt, wrapper);
 
         // read http location
-        httpLoc = nbt.getString("httpLoc");
+        apiUpdater.setHttpLocation(nbt.getString("httpLoc"));
 
         // read headers
         NbtCompound nbtHeaders = nbt.getCompound("headers");
-        headers.clear();
 
         for (String i : nbtHeaders.getKeys()) {
-            headers.add(new BasicHeader(i, nbtHeaders.getString(i)));
+            apiUpdater.addHeader(i, nbtHeaders.getString(i));
         }
 
         // read tick space
-        tickSpace = nbt.getInt("tickSpace");
+        apiUpdater.setTickSpace(nbt.getInt("tickSpace"));
     }
 
     @Nullable
@@ -86,15 +72,15 @@ public class APIBlockEntity extends BlockEntity {
         return createNbt(wrapperLookup);
     }
 
-
     public static void tick(World world, BlockPos pos, BlockState state, APIBlockEntity blockEntity) {
         blockEntity.tickCounter++;
-        if (blockEntity.tickCounter == blockEntity.apiUpdater.tickSpace) {
+        if (blockEntity.tickCounter == blockEntity.apiUpdater.getTickSpace()) {
 
-            blockEntity.apiUpdater.executeRequest();
+            if (!blockEntity.apiUpdater.getHttpLocation().isBlank())
+                blockEntity.apiUpdater.executeRequest();
 
             boolean currentState = state.get(Properties.POWERED);
-            boolean shouldEmit = blockEntity.apiUpdater.success;
+            boolean shouldEmit = !blockEntity.apiUpdater.getHttpLocation().isBlank() && blockEntity.apiUpdater.isSuccess();
 
             if (currentState != shouldEmit) {
                 world.setBlockState(pos, state.with(Properties.POWERED, shouldEmit), 3);

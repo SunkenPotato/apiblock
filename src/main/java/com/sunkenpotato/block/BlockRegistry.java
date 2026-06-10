@@ -17,7 +17,5 @@ public class BlockRegistry {
                 BlockEntityType.Builder.create(APIBlockEntity::new, API_BLOCK).build()
     );
 
-    public void initialize() {
-
-    }
+    public void initialize() {}
 }

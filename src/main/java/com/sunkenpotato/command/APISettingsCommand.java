@@ -69,13 +69,13 @@ public class APISettingsCommand {
 
         StringBuilder sb = new StringBuilder();
         sb.append("APIBlock at ").append(pos.getX()).append(", ").append(pos.getY()).append(", ").append(pos.getZ()).append(" has the following properties:\n");
-        sb.append("HTTP Route: ").append(blockEntity.apiUpdater.httpLocation).append("\n");
+        sb.append("HTTP Route: ").append(blockEntity.apiUpdater.getHttpLocation()).append("\n");
         sb.append("Headers: \n");
-        for (var i : blockEntity.apiUpdater.headers) {
+        for (var i : blockEntity.apiUpdater.getHeaders()) {
             sb.append('\t').append(i.getName()).append(" : ").append(i.getValue()).append("\n");
         }
 
-        sb.append("Update time: ").append(blockEntity.apiUpdater.tickSpace).append(" ticks.");
+        sb.append("Update time: ").append(blockEntity.apiUpdater.getTickSpace()).append(" ticks.");
 
         ctx.getSource().sendFeedback(() -> Text.literal(sb.toString()), false);
         return 0;
@@ -98,8 +98,7 @@ public class APISettingsCommand {
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
         String input = StringArgumentType.getString(ctx, "input");
 
-        blockEntity.apiUpdater.setURL(input);
-        blockEntity.httpLoc = input;
+        blockEntity.apiUpdater.setHttpLocation(input);
 
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock HTTP location to: " + input), false);
 
@@ -124,7 +123,6 @@ public class APISettingsCommand {
         int input = IntegerArgumentType.getInteger(ctx, "input");
 
         blockEntity.apiUpdater.setTickSpace(input);
-        blockEntity.tickSpace = input;
 
         ctx.getSource().sendFeedback(() -> Text.literal("Set APIBlock tick space to: " + input), false);
 
@@ -148,7 +146,7 @@ public class APISettingsCommand {
         BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
 
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + blockEntity.httpLoc), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following route: " + blockEntity.apiUpdater.getHttpLocation()), false);
         return 0;
     }
 
@@ -167,7 +165,7 @@ public class APISettingsCommand {
         BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
 
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following tickSpace: " + blockEntity.tickSpace), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock has the following tickSpace: " + blockEntity.apiUpdater.getTickSpace()), false);
         return 0;
     }
 
@@ -190,7 +188,7 @@ public class APISettingsCommand {
         StringBuilder sb = new StringBuilder();
         sb.append("APIBlock has the following headers: \n");
 
-        List<Header> headers = blockEntity.apiUpdater.headers;
+        List<Header> headers = blockEntity.apiUpdater.getHeaders();
 
         for (var i : headers) {
             sb.append(i.getName()).append(" : ").append(i.getValue()).append("\n");
@@ -218,10 +216,9 @@ public class APISettingsCommand {
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
         int value = IntegerArgumentType.getInteger(ctx, "value");
 
-        blockEntity.apiUpdater.setTickSpace(blockEntity.tickSpace + value);
-        blockEntity.tickSpace += value;
+        blockEntity.apiUpdater.setTickSpace(blockEntity.apiUpdater.getTickSpace() + value);
 
-        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock tickSpeed is now at " + blockEntity.tickSpace), false);
+        ctx.getSource().sendFeedback(() -> Text.literal("APIBlock tickSpeed is now at " + blockEntity.apiUpdater.getTickSpace()), false);
 
         return 0;
     }
@@ -267,8 +264,7 @@ public class APISettingsCommand {
         BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
 
-        blockEntity.apiUpdater.setURL("");
-        blockEntity.httpLoc = "";
+        blockEntity.apiUpdater.setHttpLocation("");
 
         ctx.getSource().sendFeedback(() -> Text.literal("Reset route."), false);
 
@@ -292,7 +288,6 @@ public class APISettingsCommand {
         APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
 
         blockEntity.apiUpdater.setTickSpace(20);
-        blockEntity.tickSpace = 20;
 
         ctx.getSource().sendFeedback(() -> Text.literal("Reset tick speed."), false);
 
@@ -322,6 +317,31 @@ public class APISettingsCommand {
         return 0;
     }
 
+    public static int deleteHeaderSubcommand(CommandContext<ServerCommandSource> ctx) {
+        APIBlockState blockState = getAPIBlockState(ctx);
+        switch (blockState) {
+            case NOT_LOADED -> {
+                ctx.getSource().sendFeedback(() -> Text.literal("Position does not exist / not loaded."), false);
+                return 1;
+            }
+            case NOT_AN_API_BLOCK -> {
+                ctx.getSource().sendFeedback(() -> Text.literal("No block entity found."), false);
+                return 1;
+            }
+        }
 
+        BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
+        APIBlockEntity blockEntity = ctx.getSource().getWorld().getBlockEntity(pos, BlockRegistry.API_BLOCK_ENTITY).get();
+        String headerName = StringArgumentType.getString(ctx, "header");
+
+        if (blockEntity.apiUpdater.deleteHeader(headerName)) {
+            ctx.getSource().sendFeedback(() -> Text.literal("Deleted %s header".formatted(headerName)), false);
+            return 0;
+        }
+        else {
+            ctx.getSource().sendFeedback(() -> Text.literal("No such header stored"), false);
+            return 1;
+        }
+    }
 }
 

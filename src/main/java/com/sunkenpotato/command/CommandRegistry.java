@@ -13,8 +13,7 @@ public class CommandRegistry {
     }
 
     private void apiSettingsCommand() {
-        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> {
-
+        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) ->
             dispatcher.register(CommandManager.literal("apiblock")
                     .executes(APISettingsCommand::noArgumentBase)
                     .then(CommandManager.argument("pos", BlockPosArgumentType.blockPos())
@@ -41,10 +40,12 @@ public class CommandRegistry {
                                             .then(CommandManager.literal("header")
                                                     .then(CommandManager.argument("name", StringArgumentType.string())
                                                             .then(CommandManager.argument("value", StringArgumentType.string()).executes(APISettingsCommand::addHeaderSubcommand))))
-                                    )
-                    ));
-
-        }));
+                                    ).then(CommandManager.literal("delete")
+                                            .then(CommandManager.literal("header")
+                                                    .then(CommandManager.argument("header", StringArgumentType.string()).executes(APISettingsCommand::deleteHeaderSubcommand)))
+                            )
+                    ))
+        ));
     }
 
 }

@@ -42,7 +42,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	implementation 'org.apache.httpcomponents.client5:httpclient5-fluent:5.4-beta1'
+	implementation 'org.apache.httpcomponents.client5:httpclient5-fluent:5.6.1'
 	
 }
 
